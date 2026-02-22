@@ -17,7 +17,10 @@ exports.calculateRuleScore = (transaction) => {
 
 exports.getMLRiskScore = async (transaction) => {
     try {
-        const response = await axios.post(`${process.env.ML_SERVICE_URL}/predict`, {
+        // In local dev with vercel dev, or production, /api/ml is routed correctly.
+        // We use the environment variable if defined, otherwise fallback to local/relative.
+        const mlUrl = process.env.ML_SERVICE_URL || '';
+        const response = await axios.post(`${mlUrl}/api/ml/predict`, {
             amount: transaction.amount,
             time: transaction.time,
             location: transaction.location,

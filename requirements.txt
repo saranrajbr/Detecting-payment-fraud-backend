@@ -1,0 +1,5 @@
+fastapi
+pydantic
+numpy
+# tensorflow  # Removed for now as it often exceeds Vercel's 250MB limit. 
+# The simulation logic doesn't strictly need it unless a model is loaded.

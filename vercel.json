@@ -1,0 +1,27 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "index.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "api/ml.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/ml/(.*)",
+            "dest": "api/ml.py"
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "index.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "index.js"
+        }
+    ]
+}
