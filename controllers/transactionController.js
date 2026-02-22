@@ -48,8 +48,11 @@ exports.createTransaction = async (req, res, next) => {
 
 exports.getTransactions = async (req, res, next) => {
     try {
-        const query = req.user.role === 'admin' ? {} : { userId: req.user.id };
-        const transactions = await Transaction.find(query).sort({ createdAt: -1 });
+        // Security: Only admins can see the transaction list
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Admin role required.' });
+        }
+        const transactions = await Transaction.find().sort({ createdAt: -1 });
         res.json(transactions);
     } catch (err) {
         next(err);
