@@ -27,28 +27,57 @@ app.set('trust proxy', 1);
 mongoose.set('bufferCommands', false);
 
 const connectDB = async () => {
-    if (mongoose.connection.readyState >= 1) {
-        console.log('Using existing MongoDB connection');
-        return;
-    }
+    if (mongoose.connection.readyState >= 1) return;
 
     try {
         console.log('Connecting to MongoDB...');
         await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-            dbName: 'fraud_detection_system' // Explicitly set DB name
+            serverSelectionTimeoutMS: 5000,
+            dbName: 'fraud_detection_system'
         });
         console.log('MongoDB Connected successfully');
     } catch (err) {
         console.error('CRITICAL: MongoDB Connection Error:', err.message);
-        // Do not throw; let the app live to serve other non-DB routes if any
     }
 };
 
-// Initiate connection (Don't await, let it connect in background)
+// 3. Database Guard Middleware
+const dbMiddleware = async (req, res, next) => {
+    const state = mongoose.connection.readyState;
+
+    // State 1 is "Connected"
+    if (state === 1) {
+        return next();
+    }
+
+    console.log(`[DB Guard] Current state: ${state}. Waiting for connection...`);
+
+    try {
+        // If state is 2 (connecting) or 0 (disconnected), wait for it
+        await connectDB();
+
+        // Final check after potential wait
+        if (mongoose.connection.readyState === 1) {
+            console.log('[DB Guard] Connection ready!');
+            next();
+        } else {
+            console.error('[DB Guard] Connection failed to stabilize');
+            res.status(503).json({
+                error: 'Database connection unstable',
+                details: 'The server is currently connecting to the database. Please try again in 5 seconds.'
+            });
+        }
+    } catch (err) {
+        console.error('[DB Guard] Middleware Error:', err.message);
+        res.status(500).json({ error: 'Internal database connection error' });
+    }
+};
+
+// Initiate connection
 connectDB();
 
 // Middleware
+app.use(dbMiddleware); // Force all requests to wait for DB
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
