@@ -92,10 +92,10 @@ const dbMiddleware = async (req, res, next) => {
 connectDB();
 
 // Middleware
-app.use(dbMiddleware); // Force all requests to wait for DB
-app.use(express.json());
-app.use(cors());
+app.use(cors()); // Enable CORS for all origins (or you can specify origin: 'https://saranrajbr.github.io')
 app.use(helmet());
+app.use(express.json());
+app.use(dbMiddleware); // Force all requests to wait for DB
 
 // Rate Limiting (Silencing validation for Vercel)
 const limiter = rateLimit({
