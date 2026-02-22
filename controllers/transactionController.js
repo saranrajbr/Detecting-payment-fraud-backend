@@ -6,7 +6,10 @@ exports.createTransaction = async (req, res, next) => {
         const transactionData = { ...req.body, userId: req.user.id };
 
         // 1. Get Scores
-        const mlRiskScore = await getMLRiskScore(transactionData);
+        const mlResponse = await getMLRiskScore(transactionData);
+        const mlRiskScore = mlResponse.risk_score || 0.5;
+        const riskBreakdown = mlResponse.risk_breakdown || {};
+
         const ruleRiskScore = calculateRuleScore(transactionData);
 
         // 2. Final Risk Score Calculation
@@ -34,7 +37,10 @@ exports.createTransaction = async (req, res, next) => {
         });
 
         await transaction.save();
-        res.status(201).json(transaction);
+        res.status(201).json({
+            ...transaction._doc,
+            mlBreakdown: riskBreakdown
+        });
     } catch (err) {
         next(err);
     }

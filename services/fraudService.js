@@ -40,9 +40,11 @@ exports.getMLRiskScore = async (transaction) => {
             location: transaction.location,
             device_type: transaction.deviceType,
             merchant_category: transaction.merchantCategory,
-            ip_address: transaction.ipAddress
+            ip_address: transaction.ipAddress,
+            payment_method: transaction.paymentMethod,
+            transaction_time: transaction.transactionTime
         });
-        return response.data.risk_score;
+        return response.data; // Return full data to include breakdown
     } catch (err) {
         console.error('ML Service Error:', err.message);
         return 0.5; // Default fallback risk if ML service is down
