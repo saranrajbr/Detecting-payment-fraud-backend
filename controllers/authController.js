@@ -12,7 +12,7 @@ exports.register = async (req, res, next) => {
     }
 };
 
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });

@@ -19,18 +19,35 @@ const errorHandler = (err, req, res, next) => {
 
 const app = express();
 
-// Enable trust proxy for Vercel/proxies
+// 1. MUST BE FIRST: Trust proxy for Vercel
 app.set('trust proxy', 1);
+
+// 2. Database Connection Logic (Serverless optimized)
+const connectDB = async () => {
+    if (mongoose.connection.readyState >= 1) return;
+    try {
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000
+        });
+        console.log('MongoDB Connected successfully');
+    } catch (err) {
+        console.error('MongoDB Connection Error:', err.message);
+    }
+};
+
+// Initiate connection
+connectDB();
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
-// Rate Limiting
+// Rate Limiting (Silencing validation for Vercel)
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    validate: { trustProxy: false }, // Explicitly disable validation to prevent crash
 });
 app.use('/api/', limiter);
 
@@ -58,23 +75,5 @@ app.use((req, res) => {
 // Global Error Middleware
 app.use(errorHandler);
 
-// Database Connection Logic (Serverless optimized)
-const connectDB = async () => {
-    if (mongoose.connection.readyState >= 1) return;
-
-    try {
-        await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 5000 // Fast fail for serverless
-        });
-        console.log('MongoDB Connected');
-    } catch (err) {
-        console.error('MongoDB Connection Error:', err.message);
-    }
-};
-
-// Initiate connection
-connectDB();
 
 module.exports = app;

@@ -36,7 +36,7 @@ exports.createTransaction = async (req, res, next) => {
         await transaction.save();
         res.status(201).json(transaction);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        next(err);
     }
 };
 
@@ -46,7 +46,7 @@ exports.getTransactions = async (req, res, next) => {
         const transactions = await Transaction.find(query).sort({ createdAt: -1 });
         res.json(transactions);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        next(err);
     }
 };
 
@@ -62,6 +62,6 @@ exports.getStats = async (req, res, next) => {
             fraudRate: fraudRate.toFixed(2)
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        next(err);
     }
 };
