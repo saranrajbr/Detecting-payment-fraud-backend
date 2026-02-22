@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import numpy as np
@@ -10,7 +11,7 @@ app = FastAPI()
 # model = tf.keras.models.load_model('model.h5')
 
 import logging
-
+print("hello")
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ async def predict(data: TransactionData):
         logger.info(f"Prediction successful: risk_score={risk_score}")
         return {
             "status": "success",
-            "risk_score": round(risk_score, 4),
+            "risk_score": float(np.round(risk_score, 4)),
             "fraud_prediction": fraud_prediction
         }
 
