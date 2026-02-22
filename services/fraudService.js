@@ -3,28 +3,29 @@ const axios = require('axios');
 exports.calculateRuleScore = (transaction) => {
     let score = 0;
 
-    // 1. Amount Rule (India context: Higher threshold for routine spends)
-    if (transaction.amount > 50000) score += 0.3;
+    // 1. Amount Rule (Severe penalty for high consumer transactions)
+    if (transaction.amount > 50000) score += 0.4;
+    if (transaction.amount > 200000) score += 0.2;
 
-    // 2. India-Focused Geofencing
-    const indianCities = ["Chennai", "Mumbai", "Delhi", "Bangalore", "Hyderabad"];
-    const isIndianCity = indianCities.some(city => transaction.location.includes(city));
+    // 2. India-Focused Geofencing (Aggressive)
+    const indianCities = ["Chennai", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Kolkata", "Pune", "Ahmedabad"];
+    const isIndianCity = indianCities.some(city => transaction.location?.includes(city));
 
-    // IP verification (Basic prefix check)
+    // IP verification
     const indianIPPrefixes = ["49.", "103.", "106.", "117.", "122.", "157.", "182."];
     const isIndianIP = indianIPPrefixes.some(prefix => transaction.ipAddress?.startsWith(prefix)) || transaction.ipAddress === "127.0.0.1";
 
     if (isIndianCity && !isIndianIP) {
-        score += 0.4; // High risk: Indian city but foreign IP
+        score += 0.5; // Critical Mismatch: Local City, Global IP
     }
 
-    // 3. Category Context
-    if (transaction.merchantCategory === 'UPI Payment' && transaction.amount > 20000) {
-        score += 0.2; // Suspicious: High value UPI (usually used for small-medium)
+    // 3. Category Context (UPI is high speed, high risk)
+    if (transaction.paymentMethod === 'UPI' && transaction.amount > 20000) {
+        score += 0.3;
     }
 
-    // 4. Device Logic
-    if (transaction.deviceType === 'Emulator') score += 0.4;
+    // 4. Device Integrity
+    if (transaction.deviceType?.includes('Emulator')) score += 0.6;
 
     return Math.min(score, 1);
 };

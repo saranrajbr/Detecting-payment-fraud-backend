@@ -12,9 +12,12 @@ exports.createTransaction = async (req, res, next) => {
 
         const ruleRiskScore = calculateRuleScore(transactionData);
 
-        // 2. Final Risk Score Calculation
-        // Final Risk Score = (ML Risk Score * 0.7) + (Rule-Based Score * 0.3)
-        const finalRiskScore = (mlRiskScore * 0.7) + (ruleRiskScore * 0.3);
+        // 2. Final Risk Score Calculation (AI-Dominant Recalibration v3.1)
+        // More weight to AI but rules act as a safety net
+        const finalRiskScore = (mlRiskScore * 0.85) + (ruleRiskScore * 0.15);
+
+        // Debug Log for Persistence
+        console.log(`[Storage] Processing transaction for User: ${req.user.id}, Amount: ${transactionData.amount}`);
 
         // 3. Decision Logic
         let actionTaken = 'Approve';

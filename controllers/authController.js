@@ -26,3 +26,27 @@ exports.login = async (req, res, next) => {
         next(err);
     }
 };
+
+exports.getProfile = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.resetPassword = async (req, res, next) => {
+    try {
+        const { email, newPassword } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: 'User with this email not found' });
+
+        user.password = newPassword;
+        await user.save();
+        res.json({ message: 'Password reset successful. Please login with your new password.' });
+    } catch (err) {
+        next(err);
+    }
+};
