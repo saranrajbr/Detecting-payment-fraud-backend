@@ -23,19 +23,29 @@ const app = express();
 app.set('trust proxy', 1);
 
 // 2. Database Connection Logic (Serverless optimized)
+// Disable buffering so that operations fail fast if not connected
+mongoose.set('bufferCommands', false);
+
 const connectDB = async () => {
-    if (mongoose.connection.readyState >= 1) return;
+    if (mongoose.connection.readyState >= 1) {
+        console.log('Using existing MongoDB connection');
+        return;
+    }
+
     try {
+        console.log('Connecting to MongoDB...');
         await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000
+            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            dbName: 'fraud_detection_system' // Explicitly set DB name
         });
         console.log('MongoDB Connected successfully');
     } catch (err) {
-        console.error('MongoDB Connection Error:', err.message);
+        console.error('CRITICAL: MongoDB Connection Error:', err.message);
+        // Do not throw; let the app live to serve other non-DB routes if any
     }
 };
 
-// Initiate connection
+// Initiate connection (Don't await, let it connect in background)
 connectDB();
 
 // Middleware

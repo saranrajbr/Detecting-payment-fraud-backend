@@ -31,22 +31,32 @@ exports.calculateRuleScore = (transaction) => {
 
 exports.getMLRiskScore = async (transaction) => {
     try {
-        // In local dev with vercel dev, or production, /api/ml is routed correctly.
-        // We use the environment variable if defined, otherwise fallback to local/relative.
-        const mlUrl = process.env.ML_SERVICE_URL || '';
+        const mlUrl = process.env.ML_SERVICE_URL;
+
+        // 1. Validate URL
+        if (!mlUrl || mlUrl.trim() === "") {
+            console.warn('⚠️ ML_SERVICE_URL is not defined. Using fallback neutral score.');
+            return { risk_score: 0.5, risk_breakdown: { "System": "ML Service Offline/Not Configured" } };
+        }
+
+        // 2. Call ML Service
         const response = await axios.post(`${mlUrl}/api/ml/predict`, {
             amount: transaction.amount,
-            time: transaction.time,
             location: transaction.location,
-            device_type: transaction.deviceType,
-            merchant_category: transaction.merchantCategory,
-            ip_address: transaction.ipAddress,
-            payment_method: transaction.paymentMethod,
-            transaction_time: transaction.transactionTime
-        });
-        return response.data; // Return full data to include breakdown
+            deviceType: transaction.deviceType,
+            merchantCategory: transaction.merchantCategory,
+            ipAddress: transaction.ipAddress,
+            paymentMethod: transaction.paymentMethod,
+            transactionTime: transaction.transactionTime
+        }, { timeout: 4000 }); // 4s timeout for ML response
+
+        return response.data;
     } catch (err) {
-        console.error('ML Service Error:', err.message);
-        return 0.5; // Default fallback risk if ML service is down
+        console.error('❌ ML Service Error:', err.message);
+        return {
+            risk_score: 0.5,
+            risk_breakdown: { "Error": "ML analysis unavailable" },
+            error_details: err.message
+        };
     }
 };
