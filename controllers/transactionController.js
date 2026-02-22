@@ -1,7 +1,7 @@
 const Transaction = require('../models/Transaction');
 const { calculateRuleScore, getMLRiskScore } = require('../services/fraudService');
 
-exports.createTransaction = async (req, res) => {
+exports.createTransaction = async (req, res, next) => {
     try {
         const transactionData = { ...req.body, userId: req.user.id };
 
@@ -40,7 +40,7 @@ exports.createTransaction = async (req, res) => {
     }
 };
 
-exports.getTransactions = async (req, res) => {
+exports.getTransactions = async (req, res, next) => {
     try {
         const query = req.user.role === 'admin' ? {} : { userId: req.user.id };
         const transactions = await Transaction.find(query).sort({ createdAt: -1 });
@@ -50,7 +50,7 @@ exports.getTransactions = async (req, res) => {
     }
 };
 
-exports.getStats = async (req, res) => {
+exports.getStats = async (req, res, next) => {
     try {
         const totalTransactions = await Transaction.countDocuments();
         const fraudulentTransactions = await Transaction.countDocuments({ isFraud: true });
