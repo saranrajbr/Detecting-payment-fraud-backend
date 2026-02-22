@@ -2,15 +2,29 @@ const axios = require('axios');
 
 exports.calculateRuleScore = (transaction) => {
     let score = 0;
-    // Rule 1: High amount
-    if (transaction.amount > 10000) score += 0.4;
 
-    // Rule 2: Suspicious location (Simulation)
-    const suspiciousLocations = ['Unknown', 'HighRiskZone'];
-    if (suspiciousLocations.includes(transaction.location)) score += 0.3;
+    // 1. Amount Rule (India context: Higher threshold for routine spends)
+    if (transaction.amount > 50000) score += 0.3;
 
-    // Rule 3: Device type (Simulation)
-    if (transaction.deviceType === 'Emulator') score += 0.3;
+    // 2. India-Focused Geofencing
+    const indianCities = ["Chennai", "Mumbai", "Delhi", "Bangalore", "Hyderabad"];
+    const isIndianCity = indianCities.some(city => transaction.location.includes(city));
+
+    // IP verification (Basic prefix check)
+    const indianIPPrefixes = ["49.", "103.", "106.", "117.", "122.", "157.", "182."];
+    const isIndianIP = indianIPPrefixes.some(prefix => transaction.ipAddress?.startsWith(prefix)) || transaction.ipAddress === "127.0.0.1";
+
+    if (isIndianCity && !isIndianIP) {
+        score += 0.4; // High risk: Indian city but foreign IP
+    }
+
+    // 3. Category Context
+    if (transaction.merchantCategory === 'UPI Payment' && transaction.amount > 20000) {
+        score += 0.2; // Suspicious: High value UPI (usually used for small-medium)
+    }
+
+    // 4. Device Logic
+    if (transaction.deviceType === 'Emulator') score += 0.4;
 
     return Math.min(score, 1);
 };
