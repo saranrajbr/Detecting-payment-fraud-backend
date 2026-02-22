@@ -27,10 +27,17 @@ app.set('trust proxy', 1);
 mongoose.set('bufferCommands', false);
 
 const connectDB = async () => {
+    if (!process.env.MONGODB_URI) {
+        console.error('CRITICAL: MONGODB_URI is not defined in environment variables!');
+        return;
+    }
+
     if (mongoose.connection.readyState >= 1) return;
 
     try {
-        console.log('Connecting to MongoDB...');
+        const maskedUri = process.env.MONGODB_URI.replace(/\/\/.*@/, '//****:****@');
+        console.log(`Connecting to MongoDB (${maskedUri})...`);
+
         await mongoose.connect(process.env.MONGODB_URI, {
             serverSelectionTimeoutMS: 5000,
             dbName: 'fraud_detection_system'
@@ -48,6 +55,14 @@ const dbMiddleware = async (req, res, next) => {
     // State 1 is "Connected"
     if (state === 1) {
         return next();
+    }
+
+    // If URI is missing, fail fast
+    if (!process.env.MONGODB_URI) {
+        return res.status(500).json({
+            error: 'Backend Configuration Error',
+            details: 'MONGODB_URI is missing. Please add it to your Vercel Environment Variables.'
+        });
     }
 
     console.log(`[DB Guard] Current state: ${state}. Waiting for connection...`);
