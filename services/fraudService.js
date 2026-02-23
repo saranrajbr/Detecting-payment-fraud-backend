@@ -36,8 +36,9 @@ exports.getMLRiskScore = async (transaction) => {
 
         // 1. Validate URL
         if (!mlUrl || mlUrl.trim() === "") {
-            console.warn('⚠️ ML_SERVICE_URL is not defined. Using fallback neutral score.');
-            return { risk_score: 0.5, risk_breakdown: { "System": "ML Service Offline/Not Configured" } };
+            console.warn('⚠️ ML_SERVICE_URL is not defined. Using baseline risk calculation.');
+            // Return 0.3 as a baseline to allow rules to trigger high risk correctly
+            return { risk_score: 0.3, risk_breakdown: { "System": "ML Service Offline (Rules Primary)" } };
         }
 
         // 2. Call ML Service
@@ -55,7 +56,7 @@ exports.getMLRiskScore = async (transaction) => {
     } catch (err) {
         console.error('❌ ML Service Error:', err.message);
         return {
-            risk_score: 0.5,
+            risk_score: 0.3,
             risk_breakdown: { "Error": "ML analysis unavailable" },
             error_details: err.message
         };

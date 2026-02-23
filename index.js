@@ -23,8 +23,8 @@ const app = express();
 app.set('trust proxy', 1);
 
 // 2. Database Connection Logic (Serverless optimized)
-// Disable buffering so that operations fail fast if not connected
-mongoose.set('bufferCommands', false);
+// Enable buffering for reliability
+mongoose.set('bufferCommands', true);
 
 const connectDB = async () => {
     if (!process.env.MONGODB_URI) {
