@@ -7,7 +7,11 @@ const transactionSchema = new mongoose.Schema({
     location: { type: String, required: true },
     deviceType: { type: String, required: true },
     merchantCategory: { type: String, required: true },
-    ipAddress: { type: String, required: true },
+    ipAddress: { type: String }, // Optional, kept for legacy
+    mobileNumber: { type: String, required: true },
+    mobileStatus: { type: String, default: 'Active' },
+    circle: { type: String, default: 'Unknown' },
+    isVoip: { type: Boolean, default: false },
     mlRiskScore: { type: Number, default: 0 },
     ruleRiskScore: { type: Number, default: 0 },
     finalRiskScore: { type: Number, default: 0 },

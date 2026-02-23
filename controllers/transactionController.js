@@ -7,7 +7,7 @@ exports.createTransaction = async (req, res, next) => {
 
         // 1. Get Scores
         const mlResponse = await getMLRiskScore(transactionData);
-        const mlRiskScore = mlResponse.risk_score || 0.5;
+        const mlRiskScore = mlResponse.risk_score || 0.3;
         const riskBreakdown = mlResponse.risk_breakdown || {};
 
         const ruleRiskScore = calculateRuleScore(transactionData);
@@ -17,7 +17,7 @@ exports.createTransaction = async (req, res, next) => {
         const finalRiskScore = (mlRiskScore * 0.4) + (ruleRiskScore * 0.6);
 
         // Debug Log for Persistence
-        console.log(`[Storage] Processing transaction for User: ${req.user.id}, Amount: ${transactionData.amount}`);
+        console.log(`[Storage] Processing transaction for User: ${req.user.id}, Amount: ${transactionData.amount}, Mobile: ${transactionData.mobileNumber}`);
 
         // 3. Decision Logic
         let actionTaken = 'Approve';
@@ -51,11 +51,13 @@ exports.createTransaction = async (req, res, next) => {
 
 exports.getTransactions = async (req, res, next) => {
     try {
-        // Security: Only admins can see the transaction list
+        let query = {};
+        // If not admin, only show own transactions
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Access denied. Admin role required.' });
+            query.userId = req.user.id;
         }
-        const transactions = await Transaction.find().sort({ createdAt: -1 });
+
+        const transactions = await Transaction.find(query).sort({ createdAt: -1 });
         res.json(transactions);
     } catch (err) {
         next(err);
@@ -64,8 +66,13 @@ exports.getTransactions = async (req, res, next) => {
 
 exports.getStats = async (req, res, next) => {
     try {
-        const totalTransactions = await Transaction.countDocuments();
-        const fraudulentTransactions = await Transaction.countDocuments({ isFraud: true });
+        let query = {};
+        if (req.user.role !== 'admin') {
+            query.userId = req.user.id;
+        }
+
+        const totalTransactions = await Transaction.countDocuments(query);
+        const fraudulentTransactions = await Transaction.countDocuments({ ...query, isFraud: true });
         const fraudRate = totalTransactions > 0 ? (fraudulentTransactions / totalTransactions) * 100 : 0;
 
         res.json({
