@@ -50,3 +50,19 @@ exports.resetPassword = async (req, res, next) => {
         next(err);
     }
 };
+exports.updatePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user || !(await user.comparePassword(currentPassword))) {
+            return res.status(401).json({ error: 'Current password incorrect' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+        res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        next(err);
+    }
+};
