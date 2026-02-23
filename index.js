@@ -39,7 +39,8 @@ const connectDB = async () => {
         console.log(`Connecting to MongoDB (${maskedUri})...`);
 
         await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 15000, // increased from 5s for Vercel cold starts
+            socketTimeoutMS: 30000,
             dbName: 'fraud_detection_system'
         });
         console.log('MongoDB Connected successfully');
@@ -51,41 +52,28 @@ const connectDB = async () => {
 // 3. Database Guard Middleware
 const dbMiddleware = async (req, res, next) => {
     const state = mongoose.connection.readyState;
+    if (state === 1) return next();
 
-    // State 1 is "Connected"
-    if (state === 1) {
-        return next();
-    }
-
-    // If URI is missing, fail fast
     if (!process.env.MONGODB_URI) {
         return res.status(500).json({
             error: 'Backend Configuration Error',
-            details: 'MONGODB_URI is missing. Please add it to your Vercel Environment Variables.'
+            details: 'MONGODB_URI is missing.'
         });
     }
 
-    console.log(`[DB Guard] Current state: ${state}. Waiting for connection...`);
-
-    try {
-        // If state is 2 (connecting) or 0 (disconnected), wait for it
-        await connectDB();
-
-        // Final check after potential wait
-        if (mongoose.connection.readyState === 1) {
-            console.log('[DB Guard] Connection ready!');
-            next();
-        } else {
-            console.error('[DB Guard] Connection failed to stabilize');
-            res.status(503).json({
-                error: 'Database connection unstable',
-                details: 'The server is currently connecting to the database. Please try again in 5 seconds.'
-            });
-        }
-    } catch (err) {
-        console.error('[DB Guard] Middleware Error:', err.message);
-        res.status(500).json({ error: 'Internal database connection error' });
+    // Retry up to 3 times with 2s delay (handles Vercel cold-start)
+    for (let i = 0; i < 3; i++) {
+        try { await connectDB(); } catch (e) { /* ignore */ }
+        if (mongoose.connection.readyState === 1) return next();
+        await new Promise(r => setTimeout(r, 2000));
+        console.log(`[DB Guard] Retry ${i + 1}/3...`);
     }
+
+    console.error('[DB Guard] Connection failed after retries');
+    res.status(503).json({
+        error: 'Service temporarily unavailable',
+        details: 'Database is starting up. Please retry in a few seconds.'
+    });
 };
 
 // Initiate connection

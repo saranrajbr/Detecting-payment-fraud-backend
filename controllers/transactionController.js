@@ -52,12 +52,15 @@ exports.createTransaction = async (req, res, next) => {
 exports.getTransactions = async (req, res, next) => {
     try {
         let query = {};
-        // If not admin, only show own transactions
         if (req.user.role !== 'admin') {
             query.userId = req.user.id;
         }
 
-        const transactions = await Transaction.find(query).sort({ createdAt: -1 });
+        const transactions = await Transaction.find(query)
+            .populate('userId', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(50);
+
         res.json(transactions);
     } catch (err) {
         next(err);
