@@ -5,21 +5,20 @@ exports.createTransaction = async (req, res, next) => {
     try {
         const transactionData = { ...req.body, userId: req.user.id };
 
-        // 1. Get Scores
+        
         const mlResponse = await getMLRiskScore(transactionData);
         const mlRiskScore = mlResponse.risk_score || 0.3;
         const riskBreakdown = mlResponse.risk_breakdown || {};
 
         const ruleRiskScore = calculateRuleScore(transactionData);
 
-        // 2. Final Risk Score Calculation (Hybrid Recalibration v3.2)
-        // Adjust weight to allow rules to trigger high risk if ML is missing/neutral
+        
         const finalRiskScore = (mlRiskScore * 0.4) + (ruleRiskScore * 0.6);
 
-        // Debug Log for Persistence
+        
         console.log(`[Storage] Processing transaction for User: ${req.user.id}, Amount: ${transactionData.amount}, Mobile: ${transactionData.mobileNumber}`);
 
-        // 3. Decision Logic
+        
         let actionTaken = 'Approve';
         let isFraud = false;
 

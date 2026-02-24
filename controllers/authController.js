@@ -5,13 +5,13 @@ exports.register = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
 
-        // Explicit Check to prevent duplicates (Storage fix)
+        
         const partialUser = await User.findOne({ email });
         if (partialUser) {
             return res.status(400).json({ error: 'Account with this email already exists' });
         }
 
-        // Security: New registrations are always standard users
+        
         const user = new User({ name, email, password, role: 'user' });
         await user.save();
         res.status(201).json({ message: 'User registered successfully' });
